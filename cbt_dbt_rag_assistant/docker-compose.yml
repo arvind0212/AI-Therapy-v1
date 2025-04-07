@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16 # Use pgvector image for PostgreSQL 16
+    container_name: rag_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rag_db} # Use env var or default
+      POSTGRES_USER: ${POSTGRES_USER:-rag_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rag_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432" # Map host port from env or default
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-rag_user} -d $${POSTGRES_DB:-rag_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rag_ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434" # Map host port from env or default
+    volumes:
+      - ollama_data:/root/.ollama # Persist models
+    # Uncomment the following lines if you have NVIDIA GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1 # Or 'all'
+    #           capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  ollama_data:
+    driver: local
